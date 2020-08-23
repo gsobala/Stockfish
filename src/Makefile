@@ -247,6 +247,13 @@ ifeq ($(ARCH),armv8)
 	neon = yes
 endif
 
+ifeq ($(ARCH),armv8-raspi)
+	arch = armv8-r
+	prefetch= yes
+	popcnt = yes
+	neon = yes
+endif
+
 ifeq ($(ARCH),apple-silicon)
 	arch = arm64
 	prefetch = yes
@@ -285,7 +292,7 @@ ifeq ($(COMP),gcc)
 	CXX=g++
 	CXXFLAGS += -pedantic -Wextra -Wshadow
 
-	ifeq ($(arch),$(filter $(arch),armv7 armv8-a))
+	ifeq ($(arch),$(filter $(arch),armv7 armv8-a armv8-r))
 		ifeq ($(OS),Android)
 			CXXFLAGS += -m$(bits)
 			LDFLAGS += -m$(bits)
@@ -346,7 +353,7 @@ ifeq ($(COMP),clang)
 	endif
 	endif
 
-	ifeq ($(arch),$(filter $(arch),armv7 armv8))
+	ifeq ($(arch),$(filter $(arch),armv7 armv8 armv8-r))
 		ifeq ($(OS),Android)
 			CXXFLAGS += -m$(bits)
 			LDFLAGS += -m$(bits)
@@ -476,7 +483,7 @@ endif
 
 ### 3.6 popcnt
 ifeq ($(popcnt),yes)
-	ifeq ($(arch),$(filter $(arch),ppc64 armv7 armv8-a arm64))
+	ifeq ($(arch),$(filter $(arch),ppc64 armv7 armv8-a armv8-r arm64))
 		CXXFLAGS += -DUSE_POPCNT
 	else ifeq ($(comp),icc)
 		CXXFLAGS += -msse3 -DUSE_POPCNT
@@ -539,7 +546,9 @@ ifeq ($(neon),yes)
 	CXXFLAGS += -DUSE_NEON
 	ifeq ($(KERNEL),Linux)
 	ifneq ($(COMP),ndk)
-		CXXFLAGS += -mfpu=neon
+		ifneq ($(arch),armv8-r)
+			CXXFLAGS += -mfpu=neon
+		endif
 	endif
 	endif
 endif
@@ -638,6 +647,7 @@ help:
 	@echo "armv7                   > ARMv7 32-bit"
 	@echo "armv7-neon              > ARMv7 32-bit with popcnt and neon"
 	@echo "armv8                   > ARMv8 64-bit with popcnt and neon"
+	@echo "armv8-raspi             > ARMv8 64-bit on Raspberry Pi"
 	@echo "apple-silicon           > Apple silicon ARM64"
 	@echo "general-64              > unspecified 64-bit"
 	@echo "general-32              > unspecified 32-bit"
@@ -780,7 +790,7 @@ config-sanity:
 	@test "$(optimize)" = "yes" || test "$(optimize)" = "no"
 	@test "$(arch)" = "any" || test "$(arch)" = "x86_64" || test "$(arch)" = "i386" || \
 	 test "$(arch)" = "ppc64" || test "$(arch)" = "ppc" || \
-	 test "$(arch)" = "armv7" || test "$(arch)" = "armv8-a" || test "$(arch)" = "arm64"
+	 test "$(arch)" = "armv7" || test "$(arch)" = "armv8-a" || test "$(arch)" = "armv8-r" || test "$(arch)" = "arm64"
 	@test "$(bits)" = "32" || test "$(bits)" = "64"
 	@test "$(prefetch)" = "yes" || test "$(prefetch)" = "no"
 	@test "$(popcnt)" = "yes" || test "$(popcnt)" = "no"
